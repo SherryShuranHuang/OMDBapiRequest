@@ -30,34 +30,37 @@ public class Test {
 	}
 
 	public static void main(String[] args) throws MalformedURLException, IOException, JSONException {
-		//String movie = "E.T.: The Extra-Terrestrial  ";
-		String movie ="Captain Carey, U.S.A.";
-		String movieName = null ;
-		
-		if(movie.charAt(0)=='\"'){
-			StringBuffer bu = new StringBuffer();
-			//movieName = "" + movie.charAt(1);
-			int i=1;
-			while(movie.charAt(i)!='\"'){
-				bu.append(movie.charAt(i));
-				i++;
-			}
-			movieName = bu.toString();
-		}
-		else{
-			movieName = movie;
-		}
-//		movieName = movieName.replaceAll("\\s+", "+");
-//		movieName = movieName.replace(":", "%3A");
-//		movieName = movieName.replace(",", "%2C");
-		//System.out.println(movieName);
-		
-		System.out.println(generateURL(movieName,"1950"));
+//		//String movie = "E.T.: The Extra-Terrestrial  ";
+//		String movie ="Captain Carey, U.S.A.";
+//		String movieName = null ;
+//		
+//		if(movie.charAt(0)=='\"'){
+//			StringBuffer bu = new StringBuffer();
+//			//movieName = "" + movie.charAt(1);
+//			int i=1;
+//			while(movie.charAt(i)!='\"'){
+//				bu.append(movie.charAt(i));
+//				i++;
+//			}
+//			movieName = bu.toString();
+//		}
+//		else{
+//			movieName = movie;
+//		}
+////		movieName = movieName.replaceAll("\\s+", "+");
+////		movieName = movieName.replace(":", "%3A");
+////		movieName = movieName.replace(",", "%2C");
+//		//System.out.println(movieName);
+//		
+//		System.out.println(generateURL(movieName,"1950"));
 		
 		
 		String rate = "9.1";
 		double a = Double.parseDouble(rate);
 		System.out.println(a);
+		int sa=10;
+		rate = ""+10;
+		System.out.println(rate);
 		
 		
 	}

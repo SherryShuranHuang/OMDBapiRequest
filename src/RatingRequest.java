@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.*;
 
@@ -26,7 +27,8 @@ public class RatingRequest {
 
 	static HashMap<String, String> map = new HashMap<String,String>();
 	static HashMap<String, Double> rank = new HashMap<String, Double>();
-	static HashMap<String, String> failMatch = new HashMap<String, String>();
+	static ConcurrentHashMap<String, Boolean> failMatch = new ConcurrentHashMap<String, Boolean>();
+	//static HashMap<String, Boolean> failMatch = new HashMap<String, Boolean>();
 	static int count = 0;
 	
 	private static String generateURL(String movieName, String year){
@@ -68,7 +70,7 @@ public class RatingRequest {
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));	      
 			String jsonText = readAll(rd);
-			System.out.println(jsonText);
+			//System.out.println(jsonText);
 			JSONObject json = new JSONObject(jsonText);
 			//System.out.println(json);
 			//System.out.println("get );
@@ -78,32 +80,85 @@ public class RatingRequest {
 		}
 	}
 	
-	private static void fixFailMatch(){
-		
+	private static void fixFailMatch() throws MalformedURLException, JSONException, IOException{
+		//String movie = null;
+		String year = null;
+		Iterator it = failMatch.entrySet().iterator();
+		while(it.hasNext()){
+			Map.Entry<String,Boolean> pair =(Map.Entry<String,Boolean>) it.next();
+			String movieName = pair.getKey();
+			boolean namefixed = pair.getValue();
+			failMatch.remove(movieName);
+			//it.remove();
+			
+//			if(!namefixed){
+				StringBuffer fixedname = new StringBuffer();
+				for(int i=0;i<movieName.length();i++){
+					if(movieName.charAt(i)!='&'){
+						fixedname.append(movieName.charAt(i));
+					}else{
+						fixedname.append("and");
+					}
+				}
+				
+				year = map.get(movieName);
+				movieName = fixedname.toString();
+
+				int yearNum = Integer.parseInt(year);
+
+				String year1 = ""+(--yearNum);
+				String year2 = ""+(++yearNum);
+				
+				getRating(movieName,year1,true);
+				getRating(movieName,year, true);
+				getRating(movieName,year2,true);
+				
+				
+//			}
+//			else{ //movieName has been fixed once, change "year"
+//				year = map.get(movieName);
+//				int yearNum = Integer.parseInt(year);
+//				
+//				String year1 = ""+(--yearNum);
+//				String year2 = ""+(++yearNum);
+//				getRating(movieName,year1,true);
+//				getRating(movieName,year2,true);
+//			}
+		}	
 	}
-	
-	 
-	public static String getRating(String movieName, String year) throws JSONException, MalformedURLException, IOException{
+
+
+	public static void getRating(String movieName, String year, boolean namefixed) throws JSONException, MalformedURLException, IOException{
 		JSONObject obj = jsonReader(movieName, year);
 		String rating = null;
+		try{
+			if(!obj.isNull("imdbRating")&& (obj.getString("Type").equals("movie") || obj.getString("Type").equals("episode"))){
 
-		if(!obj.isNull("imdbRating")&& obj.getString("Type").equals("movie") ){
-			//if(obj.getString("Type").equals("movie"))
-			rating = obj.getString("imdbRating");
-			double movieRank = Double.parseDouble(rating);		
-			rank.put(movieName, movieRank);
-		}
-		else{
-			failMatch.put(movieName,year);
+				rating = obj.getString("imdbRating");
+				if(!rating.equals("N/A")){
+					double movieRank = Double.parseDouble(rating);		
+					rank.put(movieName, movieRank);
+				}
+				else{
+					rank.put(movieName, 0.0);
+				}
+			}
+			else{
+				if(!rank.containsKey(movieName))
+					failMatch.put(movieName,namefixed);
+			}
+		}catch(Exception e){
+			System.err.println(e.getMessage()+"  ");
+			System.out.println(movieName);
+			e.printStackTrace();
+			
 		}
 		//System.out.println("getrating");
 
 		//TODO: fix failMatch problem
+		// move fixFailMatch to run()
 		
-		
-		
-		
-		return rating;
+		//return rating;
 	}
 	public static void readCSV(String fileName){
 
@@ -170,7 +225,7 @@ public class RatingRequest {
 			Map.Entry<String,String> pair =(Map.Entry<String,String>) it.next();
 			//String url = generateURL(pair.getKey(),pair.getValue());
 			
-			rank = getRating(pair.getKey(),pair.getValue());
+			getRating(pair.getKey(),pair.getValue(),false);//rank = getRating(pair.getKey(),pair.getValue());
 			//System.out.println("=="+rank+"   "+count);
 			//count++;
 //			if(count == 26){
@@ -178,7 +233,7 @@ public class RatingRequest {
 //			}
 		}	
 	}
-	public static void tableSort(){
+	public static void tableSort_rank(){
 		Set<Entry<String, Double>> set = rank.entrySet();
         List<Entry<String, Double>> list = new ArrayList<Entry<String, Double>>(set);
         Collections.sort( list, new Comparator<Map.Entry<String, Double>>()
@@ -196,20 +251,19 @@ public class RatingRequest {
 	public static void run(String file) throws MalformedURLException, JSONException, IOException{
 		readCSV(file);
 		movieRank();
-		
-//		Iterator it = failMatch.iterator();
-//		while(it.hasNext()){
-//			System.out.println(it.next().toString());
-//		}
+		fixFailMatch();
 	}
 
 	public static void main(String[] args) throws MalformedURLException, IOException, JSONException {
 		// TODO Auto-generated method stub
 		String file = "moviestest.csv";
 		run(file);
-		//String res = getRating(jsonReader("http://www.omdbapi.com/?t=The+Graduate&y=&plot=short&r=json"));
-		//System.out.println(res);
-		tableSort();
+		tableSort_rank();
+		
+		Iterator it = failMatch.keySet().iterator();
+		while(it.hasNext()){
+			System.out.println(it.next().toString());
+		}
 	}
 
 }
